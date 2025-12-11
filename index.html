@@ -16,18 +16,49 @@
   <ul id="cart-items"></ul>
   <p id="cart-total">Total: $0</p>
 
-  <form id="checkout-form">
-    <input type="text" id="customer-name" placeholder="Your Name" required>
-    <input type="email" id="customer-email" placeholder="Email" required>
-    <input type="text" id="customer-phone" placeholder="Phone" required>
-    <textarea id="customer-address" placeholder="Shipping Address" required></textarea>
-    <button type="submit">Place Order</button>
-  </form>
-</div>
+<form id="checkout-form">
+  <input type="text" id="customer-name" placeholder="Your Name" required>
+  <input type="email" id="customer-email" placeholder="Email" required readonly>
+  <input type="text" id="customer-phone" placeholder="Phone" required>
+  <textarea id="customer-address" placeholder="Shipping Address" required></textarea>
+  <button type="submit">Place Order</button>
+</form>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script src="supabase.js"></script>
 <script>
+
+
+  // Load user info if logged in
+async function loadUserInfo() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    alert('Please log in to checkout');
+    window.location.href = 'auth.html';
+    return;
+  }
+
+  const userId = session.user.id;
+
+  // Fill email
+  document.getElementById('customer-email').value = session.user.email;
+
+  // Fetch saved profile info
+  const { data: profile, error } = await supabase
+    .from('user_profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+
+  if (!error && profile) {
+    document.getElementById('customer-name').value = profile.name;
+    document.getElementById('customer-phone').value = profile.phone;
+    document.getElementById('customer-address').value = profile.address;
+  }
+}
+loadUserInfo();
+
+  
 let cart = [];
 
 async function loadProducts() {
