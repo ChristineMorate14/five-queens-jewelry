@@ -3,19 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Five Queens Jewelry</title>
+<title>Five Queens Jewelry — Shop</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
 <h1>Five Queens Jewelry</h1>
-<div id="products-container"></div>
 
-<div id="cart">
-  <h2>Cart</h2>
-  <ul id="cart-items"></ul>
-  <p id="cart-total">Total: $0</p>
+<div id="products-container" style="display:flex;flex-wrap:wrap;gap:20px;"></div>
 
+<h2>Cart</h2>
+<div id="cart-container"></div>
+<p>Total: $<span id="cart-total">0</span></p>
+
+<h2>Checkout</h2>
 <form id="checkout-form">
   <input type="text" id="customer-name" placeholder="Your Name" required>
   <input type="email" id="customer-email" placeholder="Email" required readonly>
@@ -27,30 +28,53 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script src="supabase.js"></script>
 <script>
+let cart = [];
 
+// Load products
+async function loadProducts() {
+  const { data, error } = await supabase.from('products').select('*');
+  if(error){ console.error(error); return; }
+  const container = document.getElementById('products-container');
+  container.innerHTML = '';
+  data.forEach(p => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${p.image_url}" alt="${p.name}">
+      <h3>${p.name}</h3>
+      <p>$${p.price}</p>
+      <button class="add-btn">Add to Cart</button>
+    `;
+    card.querySelector('.add-btn').addEventListener('click', () => {
+      cart.push(p);
+      updateCart();
+    });
+    container.appendChild(card);
+  });
+}
+loadProducts();
 
-  // Load user info if logged in
+// Update cart display
+function updateCart() {
+  const container = document.getElementById('cart-container');
+  container.innerHTML = '';
+  cart.forEach((item, idx) => {
+    const div = document.createElement('div');
+    div.textContent = `${item.name} - $${item.price}`;
+    container.appendChild(div);
+  });
+  document.getElementById('cart-total').textContent = cart.reduce((sum,i)=>sum+parseFloat(i.price),0).toFixed(2);
+}
+
+// Load user info
 async function loadUserInfo() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) {
-    alert('Please log in to checkout');
-    window.location.href = 'auth.html';
-    return;
-  }
-
+  if (!session) { alert('Please log in to checkout'); window.location.href = 'auth.html'; return; }
   const userId = session.user.id;
-
-  // Fill email
   document.getElementById('customer-email').value = session.user.email;
 
-  // Fetch saved profile info
-  const { data: profile, error } = await supabase
-    .from('user_profiles')
-    .select('*')
-    .eq('id', userId)
-    .single();
-
-  if (!error && profile) {
+  const { data: profile, error } = await supabase.from('user_profiles').select('*').eq('id', userId).single();
+  if(!error && profile){
     document.getElementById('customer-name').value = profile.name;
     document.getElementById('customer-phone').value = profile.phone;
     document.getElementById('customer-address').value = profile.address;
@@ -58,67 +82,37 @@ async function loadUserInfo() {
 }
 loadUserInfo();
 
-  
-let cart = [];
-
-async function loadProducts() {
-  const { data: products, error } = await supabase.from('products').select('*');
-  if (error) { console.error(error); return; }
-  const container = document.getElementById('products-container');
-  container.innerHTML = '';
-  products.forEach(product => {
-    const card = document.createElement('div');
-    card.className = 'product-card';
-    card.innerHTML = `
-      <img src="${product.image_url}" alt="${product.name}">
-      <h3>${product.name}</h3>
-      <p>$${product.price}</p>
-      <button class="add-btn">Add to Cart</button>
-    `;
-    card.querySelector('.add-btn').addEventListener('click', () => addToCart(product));
-    container.appendChild(card);
-  });
-}
-
-function addToCart(product) {
-  cart.push(product);
-  updateCart();
-}
-
-function updateCart() {
-  const cartItems = document.getElementById('cart-items');
-  cartItems.innerHTML = '';
-  let total = 0;
-  cart.forEach(item => {
-    const li = document.createElement('li');
-    li.textContent = `${item.name} - $${item.price}`;
-    cartItems.appendChild(li);
-    total += parseFloat(item.price);
-  });
-  document.getElementById('cart-total').textContent = `Total: $${total.toFixed(2)}`;
-}
-
+// Checkout
 document.getElementById('checkout-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   if(cart.length === 0){ alert("Cart is empty!"); return; }
+
+  const { data: { session } } = await supabase.auth.getSession();
+  const userId = session.user.id;
+
+  const name = document.getElementById('customer-name').value;
+  const email = document.getElementById('customer-email').value;
+  const phone = document.getElementById('customer-phone').value;
+  const address = document.getElementById('customer-address').value;
+
+  await supabase.from('user_profiles').upsert({ id: userId, name, phone, address });
+
   const order = {
-    name: document.getElementById('customer-name').value,
-    email: document.getElementById('customer-email').value,
-    phone: document.getElementById('customer-phone').value,
-    address: document.getElementById('customer-address').value,
+    user_id: userId,
+    name, email, phone, address,
     items: cart,
-    total: cart.reduce((sum, item) => sum + parseFloat(item.price), 0),
+    total: cart.reduce((sum,i)=>sum+parseFloat(i.price),0),
     status: 'pending'
   };
+
   const { data, error } = await supabase.from('orders').insert([order]);
   if(error){ alert("Error placing order"); console.error(error); return; }
+
   alert("Order placed successfully!");
   cart = [];
   updateCart();
   document.getElementById('checkout-form').reset();
 });
-
-loadProducts();
 </script>
 </body>
 </html>
