@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Admin Dashboard</title>
+<style>
+  body { font-family: Arial; padding: 20px; background: #f4f4f4; }
+  table { width: 100%; border-collapse: collapse; background: white; }
+  th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+  th { background: #6a2c70; color: white; }
+  button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; }
+  .paid { background: #4caf50; color: white; }
+  .delivered { background: #2196f3; color: white; }
+</style>
+</head>
+<body>
+
+<h1>Admin Dashboard — Secure</h1>
+<table id="orders-table">
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Customer</th>
+      <th>Email</th>
+      <th>Items</th>
+      <th>Total</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://iosezfjvavmrlakobzej.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_v023oj_IxpqsRQ7sYPuhkA_EmWJJ22B";
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+async function loadOrders() {
+  const { data: orders, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+  if(error){ console.error(error); return; }
+
+  const tbody = document.querySelector('#orders-table tbody');
+  tbody.innerHTML = '';
+
+  orders.forEach(order => {
+    const tr = document.createElement('tr');
+    const itemsText = order.items.map(i => i.name).join(', ');
+
+    tr.innerHTML = `
+      <td>${order.id}</td>
+      <td>${order.name}</td>
+      <td>${order.email}</td>
+      <td>${itemsText}</td>
+      <td>$${order.total}</td>
+      <td>${order.status}</td>
+      <td>
+        <button class="paid-btn">Mark Paid</button>
+        <button class="delivered-btn">Mark Delivered</button>
+      </td>
+    `;
+
+    tr.querySelector('.paid-btn').addEventListener('click', () => updateStatus(order.id, 'paid'));
+    tr.querySelector('.delivered-btn').addEventListener('click', () => updateStatus(order.id, 'delivered'));
+
+    tbody.appendChild(tr);
+  });
+}
+
+async function updateStatus(orderId, status) {
+  try {
+    const response = await fetch('https://<project-ref>.functions.supabase.co/update-order-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId, status })
+    });
+    const result = await response.json();
+    if(result.error) { alert("Error: " + result.error); return; }
+    loadOrders();
+  } catch(err) { console.error(err); alert("Error updating order"); }
+}
+
+loadOrders();
+</script>
+
+</body>
+</html>
