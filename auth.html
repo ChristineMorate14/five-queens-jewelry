@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five Queens Jewelry — Login / Register</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial; background: #f4f4f4; }
+  .auth-container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); width: 320px; text-align: center; }
+  input { width: 90%; padding: 10px; margin: 8px 0; border-radius: 6px; border: 1px solid #ccc; }
+  button { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; background: #6a2c70; color: white; margin-top: 10px; }
+  button:hover { background: #9b59b6; }
+  p { margin-top: 15px; }
+  a { color: #6a2c70; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="auth-container">
+  <h2 id="form-title">Login</h2>
+
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="password" id="password" placeholder="Password" required>
+  <button id="auth-btn">Login</button>
+
+  <p id="toggle-text">
+    Don't have an account? <a id="toggle-link">Register</a>
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script>
+let isLogin = true;
+
+const formTitle = document.getElementById('form-title');
+const authBtn = document.getElementById('auth-btn');
+const toggleLink = document.getElementById('toggle-link');
+
+toggleLink.addEventListener('click', () => {
+  isLogin = !isLogin;
+  formTitle.textContent = isLogin ? 'Login' : 'Register';
+  authBtn.textContent = isLogin ? 'Login' : 'Register';
+  toggleLink.textContent = isLogin ? 'Register' : 'Login';
+  document.getElementById('toggle-text').innerHTML = isLogin ?
+    `Don't have an account? <a id="toggle-link">Register</a>` :
+    `Already have an account? <a id="toggle-link">Login</a>`;
+  document.getElementById('toggle-link').addEventListener('click', () => toggleLink.click());
+});
+
+authBtn.addEventListener('click', async () => {
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+
+  if (!email || !password) { alert('Please fill all fields'); return; }
+
+  if (isLogin) {
+    // Login
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) { alert(error.message); return; }
+    alert('Logged in successfully!');
+    window.location.href = 'index.html'; // Redirect to shop
+  } else {
+    // Register
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) { alert(error.message); return; }
+    alert('Registration successful! Please check your email to confirm your account.');
+  }
+});
+</script>
+
+</body>
+</html>
