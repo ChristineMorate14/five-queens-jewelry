@@ -1,0 +1,12 @@
+body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
+h1 { text-align: center; margin-bottom: 20px; }
+table { width: 100%; border-collapse: collapse; background: white; margin-top: 20px; }
+th, td { padding: 12px; border: 1px solid #ddd; text-align: left; }
+th { background: #6a2c70; color: white; }
+button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; }
+.add-btn { background: #f08a5d; color: white; }
+.add-btn:hover { background: #b83b5e; }
+.paid { background: #4caf50; color: white; }
+.delivered { background: #2196f3; color: white; }
+.product-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); text-align: center; margin-bottom: 20px; }
+.product-card img { max-width: 100%; border-radius: 8px; margin-bottom: 10px; }
