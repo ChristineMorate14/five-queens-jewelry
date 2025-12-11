@@ -1,89 +1,124 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Five Queens Jewelry</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-      background: #f9f9f9;
-    }
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
-    }
-    #products-container {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-    }
-    .product-card {
-      background: white;
-      padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      text-align: center;
-      transition: transform 0.2s;
-    }
-    .product-card:hover {
-      transform: translateY(-5px);
-    }
-    .product-card img {
-      max-width: 100%;
-      border-radius: 8px;
-      margin-bottom: 10px;
-    }
-    .product-card h3 {
-      margin: 10px 0 5px;
-      font-size: 1.1em;
-    }
-    .product-card p {
-      margin: 0;
-      color: #555;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Five Queens Jewelry</title>
+<style>
+  body { font-family: Arial, sans-serif; padding: 20px; background: #f9f9f9; }
+  h1 { text-align: center; margin-bottom: 20px; }
+  #products-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .product-card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); text-align: center; transition: transform 0.2s; }
+  .product-card:hover { transform: translateY(-5px); }
+  .product-card img { max-width: 100%; border-radius: 8px; margin-bottom: 10px; }
+  .product-card h3 { margin: 10px 0 5px; font-size: 1.1em; }
+  .product-card p { margin: 0 0 10px; color: #555; font-weight: bold; }
+  .add-btn { background: #f08a5d; border: none; color: white; padding: 8px 12px; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+  .add-btn:hover { background: #b83b5e; }
+  #cart { position: fixed; top: 20px; right: 20px; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); width: 250px; }
+  #cart h2 { margin-top: 0; font-size: 1.2em; }
+  #cart-items { list-style: none; padding-left: 0; max-height: 200px; overflow-y: auto; }
+  #cart-items li { margin-bottom: 8px; }
+  #checkout-form { margin-top: 20px; display: flex; flex-direction: column; gap: 10px; }
+  #checkout-form input, #checkout-form textarea { padding: 8px; border-radius: 6px; border: 1px solid #ccc; width: 100%; }
+  #checkout-form button { background: #6a2c70; color: white; padding: 10px; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s; }
+  #checkout-form button:hover { background: #b83b5e; }
+</style>
 </head>
 <body>
 
 <h1>Five Queens Jewelry</h1>
 <div id="products-container"></div>
 
-<!-- Supabase JS client -->
+<div id="cart">
+  <h2>Cart</h2>
+  <ul id="cart-items"></ul>
+  <p id="cart-total">Total: $0</p>
+
+  <form id="checkout-form">
+    <input type="text" id="customer-name" placeholder="Your Name" required>
+    <input type="email" id="customer-email" placeholder="Email" required>
+    <input type="text" id="customer-phone" placeholder="Phone" required>
+    <textarea id="customer-address" placeholder="Shipping Address" required></textarea>
+    <button type="submit">Place Order</button>
+  </form>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/supabase.min.js"></script>
 <script>
-  const SUPABASE_URL = "https://iosezfjvavmrlakobzej.supabase.co";
-  const SUPABASE_ANON_KEY = "sb_publishable_v023oj_IxpqsRQ7sYPuhkA_EmWJJ22B";
-  const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL = "https://iosezfjvavmrlakobzej.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_v023oj_IxpqsRQ7sYPuhkA_EmWJJ22B";
+const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  async function loadProducts() {
-    const { data: products, error } = await supabase
-      .from('products') // Make sure your table is named 'products'
-      .select('*');
+let cart = [];
 
-    if (error) {
-      console.error('Error fetching products:', error);
-      return;
-    }
+async function loadProducts() {
+  const { data: products, error } = await supabase.from('products').select('*');
+  if (error) { console.error('Error fetching products:', error); return; }
 
-    const container = document.getElementById('products-container');
-    container.innerHTML = ''; // Clear previous content
+  const container = document.getElementById('products-container');
+  container.innerHTML = '';
 
-    products.forEach(product => {
-      const card = document.createElement('div');
-      card.className = 'product-card';
-      card.innerHTML = `
-        <img src="${product.image_url}" alt="${product.name}">
-        <h3>${product.name}</h3>
-        <p>$${product.price}</p>
-      `;
-      container.appendChild(card);
-    });
+  products.forEach(product => {
+    const card = document.createElement('div');
+    card.className = 'product-card';
+    card.innerHTML = `
+      <img src="${product.image_url}" alt="${product.name}">
+      <h3>${product.name}</h3>
+      <p>$${product.price}</p>
+      <button class="add-btn">Add to Cart</button>
+    `;
+    card.querySelector('.add-btn').addEventListener('click', () => addToCart(product));
+    container.appendChild(card);
+  });
+}
+
+function addToCart(product) {
+  cart.push(product);
+  updateCart();
+}
+
+function updateCart() {
+  const cartItems = document.getElementById('cart-items');
+  cartItems.innerHTML = '';
+  let total = 0;
+  cart.forEach(item => {
+    const li = document.createElement('li');
+    li.textContent = `${item.name} - $${item.price}`;
+    cartItems.appendChild(li);
+    total += parseFloat(item.price);
+  });
+  document.getElementById('cart-total').textContent = `Total: $${total.toFixed(2)}`;
+}
+
+document.getElementById('checkout-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  if(cart.length === 0){ alert("Cart is empty!"); return; }
+
+  const order = {
+    name: document.getElementById('customer-name').value,
+    email: document.getElementById('customer-email').value,
+    phone: document.getElementById('customer-phone').value,
+    address: document.getElementById('customer-address').value,
+    items: cart,
+    total: cart.reduce((sum, item) => sum + parseFloat(item.price), 0),
+    status: 'pending'
+  };
+
+  const { data, error } = await supabase.from('orders').insert([order]);
+  if(error){
+    console.error("Error placing order:", error);
+    alert("Error placing order.");
+  } else {
+    alert("Order placed successfully!");
+    cart = [];
+    updateCart();
+    document.getElementById('checkout-form').reset();
   }
+});
 
-  loadProducts();
+loadProducts();
 </script>
+
 </body>
 </html>
